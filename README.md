@@ -73,10 +73,6 @@ Verify the model-free foundation with:
 These builds do not require model weights. Until `model.gguf` is installed,
 both launchers deliberately use the streaming mock engine.
 
-Development conventions and safe submodule/model workflows are documented in
-[`CONTRIBUTING.md`](CONTRIBUTING.md). Implementation is tracked one task at a
-time in [`docs/ROADMAP.md`](docs/ROADMAP.md).
-
 ## Run Android
 
 Install Android Studio (including its bundled JDK and Android SDK 36), open the repository root, and run the `androidApp` configuration. The included Gradle launcher automatically detects Android Studio's bundled JDK on macOS. From a terminal, use:

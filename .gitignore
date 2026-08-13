@@ -24,3 +24,7 @@ third_party/llama.cpp/build-*/
 *.task
 *.litertlm
 *.safetensors
+
+# Local planning and contributor notes
+/CONTRIBUTING.md
+/docs/ROADMAP.md
