@@ -23,10 +23,20 @@ active so UI development remains fast.
 ## Clone setup
 
 The project pins llama.cpp as a Git submodule and carries a small mobile
-compatibility patch. After cloning, initialize the dependency and apply the
-patch before building:
+compatibility patch. A development machine needs:
+
+- JDK 17 or newer
+- Android SDK 36
+- Android NDK `29.0.13113456`
+- CMake `3.31.6` from the Android SDK
+- Xcode for iOS builds
+
+Clone the repository, initialize the dependency, and apply the patch before
+building:
 
 ```shell
+git clone git@github.com:nizamiqarayev/Mobile-Local-LLM-Implementation.git
+cd Mobile-Local-LLM-Implementation
 git submodule update --init --recursive
 git -C third_party/llama.cpp apply ../../patches/llama-mobile.patch
 ```
@@ -34,6 +44,26 @@ git -C third_party/llama.cpp apply ../../patches/llama-mobile.patch
 The patch aligns the upstream Android library with this Gradle build, retains
 API 26 logging compatibility, resets reusable iOS generation state, and works
 around AppleClang 21 detection while producing the iOS XCFramework.
+
+For terminal Android builds, either export `ANDROID_HOME` or create the local,
+ignored `local.properties` file with the absolute SDK path:
+
+```properties
+sdk.dir=/absolute/path/to/Android/sdk
+```
+
+Verify the model-free foundation with:
+
+```shell
+./gradlew :androidApp:assembleDebug
+./gradlew \
+  :shared:linkDebugFrameworkIosArm64 \
+  :shared:linkDebugFrameworkIosSimulatorArm64 \
+  :shared:linkDebugFrameworkIosX64
+```
+
+These builds do not require model weights. Until `model.gguf` is installed,
+both launchers deliberately use the streaming mock engine.
 
 ## Run Android
 
