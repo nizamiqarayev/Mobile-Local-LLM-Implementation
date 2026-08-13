@@ -23,6 +23,12 @@ android {
     androidResources {
         noCompress += listOf("gguf")
     }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 dependencies {
