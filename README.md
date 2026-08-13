@@ -31,12 +31,20 @@ compatibility patch. A development machine needs:
 - CMake `3.31.6` from the Android SDK
 - Xcode for iOS builds
 
-Clone the repository, initialize the dependency, and apply the patch before
-building:
+Clone the repository and run the repeatable bootstrap command before building:
 
 ```shell
 git clone git@github.com:nizamiqarayev/Mobile-Local-LLM-Implementation.git
 cd Mobile-Local-LLM-Implementation
+./scripts/bootstrap.sh
+```
+
+The bootstrap command initializes the pinned dependency, applies the patch only
+when needed, validates Java and available platform tools, and reports whether
+development models are installed. It never downloads model weights or installs
+system packages. The equivalent manual dependency setup is:
+
+```shell
 git submodule update --init --recursive
 git -C third_party/llama.cpp apply ../../patches/llama-mobile.patch
 ```
