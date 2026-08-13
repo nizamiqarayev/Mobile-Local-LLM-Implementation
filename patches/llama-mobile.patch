@@ -1,0 +1,119 @@
+diff --git a/build-xcframework.sh b/build-xcframework.sh
+index 697278d..2ae7951 100755
+--- a/build-xcframework.sh
++++ b/build-xcframework.sh
+@@ -25,6 +25,20 @@ COMMON_CXX_FLAGS="-Wno-macro-redefined -Wno-shorten-64-to-32 -Wno-unused-command
+ 
+ # Common options for all builds
+ COMMON_CMAKE_ARGS=(
++    # CMake 4.4 does not yet identify AppleClang 21 from Xcode 26 reliably.
++    # Keep these explicit until upstream CMake learns this compiler release.
++    -DCMAKE_C_COMPILER=/usr/bin/clang
++    -DCMAKE_C_COMPILER_ID=AppleClang
++    -DCMAKE_C_COMPILER_ID_RUN=TRUE
++    -DCMAKE_C_COMPILER_VERSION=21.0.0
++    -DCMAKE_C_STANDARD_COMPUTED_DEFAULT=17
++    -DCMAKE_C_EXTENSIONS_COMPUTED_DEFAULT=ON
++    -DCMAKE_CXX_COMPILER=/usr/bin/clang++
++    -DCMAKE_CXX_COMPILER_ID=AppleClang
++    -DCMAKE_CXX_COMPILER_ID_RUN=TRUE
++    -DCMAKE_CXX_COMPILER_VERSION=21.0.0
++    -DCMAKE_CXX_STANDARD_COMPUTED_DEFAULT=14
++    -DCMAKE_CXX_EXTENSIONS_COMPUTED_DEFAULT=ON
+     -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO
+     -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY=""
+     -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+diff --git a/examples/llama.android/lib/build.gradle.kts b/examples/llama.android/lib/build.gradle.kts
+index ae95f41..4d3a69a 100644
+--- a/examples/llama.android/lib/build.gradle.kts
++++ b/examples/llama.android/lib/build.gradle.kts
+@@ -1,6 +1,5 @@
+ plugins {
+-    alias(libs.plugins.android.library)
+-    alias(libs.plugins.jetbrains.kotlin.android)
++    id("com.android.library")
+ }
+ 
+ android {
+@@ -10,20 +9,17 @@ android {
+     ndkVersion = "29.0.13113456"
+ 
+     defaultConfig {
+-        minSdk = 33
++        minSdk = 26
+ 
+         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+         consumerProguardFiles("consumer-rules.pro")
+ 
+         ndk {
+-             abiFilters += listOf("arm64-v8a", "x86_64")
++             abiFilters += listOf("arm64-v8a")
+         }
+         externalNativeBuild {
+             cmake {
+                 arguments += "-DCMAKE_BUILD_TYPE=Release"
+-                arguments += "-DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"
+-                arguments += "-DCMAKE_VERBOSE_MAKEFILE=ON"
+-
+                 arguments += "-DBUILD_SHARED_LIBS=ON"
+                 arguments += "-DLLAMA_BUILD_APP=OFF"
+                 arguments += "-DLLAMA_BUILD_COMMON=ON"
+@@ -49,14 +45,6 @@ android {
+         sourceCompatibility = JavaVersion.VERSION_17
+         targetCompatibility = JavaVersion.VERSION_17
+     }
+-    kotlin {
+-        jvmToolchain(17)
+-
+-        compileOptions {
+-            targetCompatibility = JavaVersion.VERSION_17
+-        }
+-    }
+-
+     packaging {
+         resources {
+             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+@@ -71,9 +59,7 @@ android {
+ }
+ 
+ dependencies {
+-    implementation(libs.androidx.core.ktx)
+-    implementation(libs.androidx.datastore.preferences)
+-
+-    testImplementation(libs.junit)
+-    androidTestImplementation(libs.androidx.junit)
++    implementation("androidx.core:core-ktx:1.17.0")
++    implementation("androidx.datastore:datastore-preferences:1.2.0")
++    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+ }
+diff --git a/examples/llama.android/lib/src/main/cpp/logging.h b/examples/llama.android/lib/src/main/cpp/logging.h
+index 2e768d2..93b34c8 100644
+--- a/examples/llama.android/lib/src/main/cpp/logging.h
++++ b/examples/llama.android/lib/src/main/cpp/logging.h
+@@ -23,7 +23,11 @@
+ #endif
+ 
+ static inline int ai_should_log(int prio) {
++#if __ANDROID_API__ >= 30
+     return __android_log_is_loggable(prio, LOG_TAG, LOG_MIN_LEVEL);
++#else
++    return prio >= LOG_MIN_LEVEL;
++#endif
+ }
+ 
+ #if LOG_MIN_LEVEL <= ANDROID_LOG_VERBOSE
+diff --git a/examples/llama.swiftui/llama.cpp.swift/LibLlama.swift b/examples/llama.swiftui/llama.cpp.swift/LibLlama.swift
+index dc2bafc..ae3ac61 100644
+--- a/examples/llama.swiftui/llama.cpp.swift/LibLlama.swift
++++ b/examples/llama.swiftui/llama.cpp.swift/LibLlama.swift
+@@ -293,6 +293,9 @@ actor LlamaContext {
+         tokens_list.removeAll()
+         temporary_invalid_cchars.removeAll()
+         llama_memory_clear(llama_get_memory(context), true)
++        is_done = false
++        n_cur = 0
++        n_decode = 0
+     }
+ 
+     private func tokenize(text: String, add_bos: Bool) -> [llama_token] {
+

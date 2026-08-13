@@ -1,0 +1,26 @@
+.DS_Store
+.idea/
+*.iml
+.gradle/
+.kotlin/
+build/
+**/build/
+
+# Android
+android/.gradle/
+android/local.properties
+local.properties
+android/**/build/
+
+# iOS
+ios/DerivedData*/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+*.xcuserstate
+third_party/llama.cpp/build-*/
+
+# Model weights are intentionally not committed.
+*.gguf
+*.task
+*.litertlm
+*.safetensors
