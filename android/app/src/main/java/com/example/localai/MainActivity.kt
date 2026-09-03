@@ -1,6 +1,8 @@
 package com.example.localai
 
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.example.localai.inference.createAndroidEngine
@@ -11,7 +13,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { App(engine = engine) }
+        setContent {
+            App(
+                engine = engine,
+                onEnableScreenAssistant = {
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                },
+                closeEngineOnDispose = false,
+            )
+        }
     }
 
 }

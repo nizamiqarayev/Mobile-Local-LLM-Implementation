@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LocalAI</string>
+    <string name="screen_assistant_label">LocalAI Screen Assistant</string>
+    <string name="screen_assistant_description">Shows a movable Ask AI button. A screenshot is captured only after you tap the button, then processed locally.</string>
+</resources>

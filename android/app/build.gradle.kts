@@ -34,4 +34,5 @@ android {
 dependencies {
     implementation(project(":shared"))
     implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }

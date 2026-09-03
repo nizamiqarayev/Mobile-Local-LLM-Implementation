@@ -105,10 +105,36 @@ The Xcode `Bundle GGUF Model` phase copies it into the app automatically. The
 lean iOS-only XCFramework can be reproduced using the commands documented in
 `ios/Frameworks/README.md`.
 
+## Screen Assistant (Android)
+
+Enable **LocalAI Screen Assistant** in Android's Accessibility settings. A
+movable Ask AI button then appears over other apps. Tapping it explicitly hides
+the button, captures the current display, and opens a compact prompt window with
+a screenshot preview. Visible text is extracted on-device and included with the
+user's question.
+
+Android 11 or newer is required for direct capture, and protected windows can
+block screenshots. As an alternative, take a screenshot normally and share it
+to LocalAI; the app is registered as an `image/*` share target. Screen content
+and OCR text remain on-device.
+
+The bundled llama.cpp Android chat binding is currently text-only, so this
+version uses bundled ML Kit OCR as the screen-to-model bridge. Direct pixel
+understanding requires llama.cpp `libmtmd` support.
+
 ## Model files
 
-Model weights are excluded from Git. The recommended starter is
-`gemma-3-1b-it-Q4_K_M.gguf` (about 806 MB); rename it to `model.gguf` in each
-platform folder. Bundling the file makes first launch fully offline. For store
-distribution, move it to Play Asset Delivery / Apple-hosted on-demand resources
-to avoid oversized base packages.
+Model weights are excluded from Git. For the Android Screen Assistant, target
+**Qwen3-VL-2B-Instruct Q4_K_M** plus its Q8 multimodal projector. The 2B model is
+a good fit for screenshot and UI understanding with a 2–3 GB working-memory
+budget. Use `model.gguf` for the language model and `mmproj.gguf` for the
+projector, with a 4K-or-smaller context and a limited image-token budget.
+
+Qwen's official GGUF repository publishes the recommended 1.11 GB Q4_K_M
+language model and a 445 MB Q8 projector. The current mobile JNI wrapper does
+not yet call `libmtmd`, so adding `mmproj.gguf` alone does not enable vision; the
+working implementation uses local OCR for now.
+
+Bundling weights makes first launch fully offline. For store distribution, use
+Play Asset Delivery / Apple-hosted on-demand resources instead of including
+them in the base application.

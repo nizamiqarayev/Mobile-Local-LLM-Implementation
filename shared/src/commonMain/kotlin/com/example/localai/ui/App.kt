@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.rememberScrollState
@@ -24,7 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
 import com.example.localai.inference.LocalLLMEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -32,7 +36,15 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 @Composable
-fun App(engine: LocalLLMEngine) {
+fun App(
+    engine: LocalLLMEngine,
+    screenshot: ImageBitmap? = null,
+    screenContextText: String = "",
+    screenContextLoading: Boolean = false,
+    screenContextError: String? = null,
+    onEnableScreenAssistant: (() -> Unit)? = null,
+    closeEngineOnDispose: Boolean = true,
+) {
     var prompt by remember { mutableStateOf("") }
     var output by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("Preparing local engine…") }
@@ -54,7 +66,7 @@ fun App(engine: LocalLLMEngine) {
         onDispose {
             generationJob?.cancel()
             engine.cancel()
-            engine.close()
+            if (closeEngineOnDispose) engine.close()
         }
     }
 
@@ -74,6 +86,41 @@ fun App(engine: LocalLLMEngine) {
                         "Inference stays native to each device.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                onEnableScreenAssistant?.let { onEnable ->
+                    Text(
+                        "Enable the Screen Assistant to show a floating Ask AI button over other " +
+                            "apps. Nothing is captured until you tap it.",
+                    )
+                    OutlinedButton(onClick = onEnable) {
+                        Text("Enable Screen Assistant")
+                    }
+                }
+
+                screenshot?.let {
+                    Text("Current screen", style = MaterialTheme.typography.titleMedium)
+                    Image(
+                        bitmap = it,
+                        contentDescription = "Screenshot shared with LocalAI",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 280.dp),
+                        contentScale = ContentScale.Fit,
+                    )
+                    Text(
+                        when {
+                            screenContextLoading -> "Reading text from the screenshot locally…"
+                            screenContextError != null -> screenContextError
+                            screenContextText.isNotBlank() -> "Screen text is ready and will be included with your question."
+                            else -> "No readable text was found. This model cannot inspect image pixels directly."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (screenContextError == null) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
                 OutlinedTextField(
                     value = prompt,
                     onValueChange = { prompt = it },
@@ -83,14 +130,21 @@ fun App(engine: LocalLLMEngine) {
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
-                        enabled = ready && prompt.isNotBlank() && !generating,
+                        enabled = ready && prompt.isNotBlank() && !generating && !screenContextLoading,
                         onClick = {
                             output = ""
                             generating = true
                             status = "Generating locally…"
                             generationJob = scope.launch {
                                 try {
-                                    engine.generate(prompt).collect { output += it }
+                                    val modelPrompt = if (screenContextText.isBlank()) {
+                                        prompt
+                                    } else {
+                                        "The user is viewing a screen containing the following locally " +
+                                            "extracted text:\n\n${screenContextText.take(MAX_SCREEN_TEXT_CHARS)}" +
+                                            "\n\nQuestion about this screen: $prompt"
+                                    }
+                                    engine.generate(modelPrompt).collect { output += it }
                                     status = "Ready · ${engine.name}"
                                 } catch (_: CancellationException) {
                                     status = "Cancelled · ${engine.name}"
@@ -122,3 +176,5 @@ fun App(engine: LocalLLMEngine) {
         }
     }
 }
+
+private const val MAX_SCREEN_TEXT_CHARS = 12_000
